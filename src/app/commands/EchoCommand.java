@@ -1,4 +1,4 @@
-package app;
+package app.commands;
 
 import api.core.Command;
 import api.core.CommandData;
@@ -11,7 +11,16 @@ public class EchoCommand extends Command {
 
 	@Override
 	protected void run(StringWalker walker) {
-		System.out.println(walker.remaining());
+		while (walker.hasRemaining()) {
+			boolean match = walker.match("\"", true);
+
+			if (match) {
+				String between = walker.matchUntil("\"", true);
+				System.out.println(between);
+			} else {
+				walker.jump(1);
+			}
+		}
 	}
 
 	@Override

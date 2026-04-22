@@ -4,6 +4,7 @@ import api.core.CommandData;
 import api.core.Commander;
 import api.util.logging.Log;
 import api.util.logging.core.Logger;
+import app.commands.EchoCommand;
 import app.commands.ExitCommand;
 
 import java.util.Scanner;
