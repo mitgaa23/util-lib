@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 
 public final class Log {
 	private static final ClassLocal<Logger> LOGGERS = new ClassLocal<>(c -> {
-		Logger logger = Logger.getLogger(c.getSimpleName());
+		Logger logger = Logger.getLogger(c.getName());
 		logger.setLevel(Level.ALL);
 		return logger;
 	});

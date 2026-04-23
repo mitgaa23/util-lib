@@ -1,4 +1,4 @@
-package util.logging.core;
+package util.logging;
 
 import util.logging.pretty.Colorizer;
 
@@ -14,7 +14,7 @@ import java.util.logging.*;
 
 public class ColorizedLogHandler extends Handler {
 	public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-	public static final String LOG_FORMAT = "{#cdd6f4}[{#75ffbb} {time} {#cdd6f4}|{#bb75ff} {name} {#cdd6f4}->{#bb75ff} {thread} {#cdd6f4}|{#%x} {level} {#cdd6f4}]:{#a6adc8} {msg}";
+	public static final String LOG_FORMAT = "{#cdd6f4}[{#75ffbb} {time} {#cdd6f4}|{#bb75ff} {thread} {#cdd6f4}->{#bb75ff} {name} {#cdd6f4}|{#%x} {level} {#cdd6f4}]:{#a6adc8} {msg}";
 
 	private static final PrintStream OUT = System.out;
 	private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();

@@ -43,8 +43,8 @@ public abstract class Command {
 		}
 		walker.pos.pop();
 
-		logger().fine("'%s' has valid args for command '%s'.".formatted(walker.get(), name()));
-		logger().fine("'%s' fully matches command '%s'".formatted(walker.get(), name()));
+		logger().finest("'%s' has valid args for command '%s'.".formatted(walker.get(), name()));
+		logger().finest("'%s' fully matches command '%s'".formatted(walker.get(), name()));
 
 		return true;
 	}
@@ -53,22 +53,22 @@ public abstract class Command {
 
 	private boolean matchCommand(StringWalker walker) {
 		if (!walker.match(prefix(), true)) {
-			logger().fine("'%s' does not match prefix '%s' for command '%s'.".formatted(walker.get(),
-			                                                                            prefix(),
-			                                                                            name()
-			));
+			//logger().finest("'%s' does not match prefix '%s' for command '%s'.".formatted(walker.get(),
+			//                                                                            prefix(),
+			//                                                                            name()
+			//));
 			return false;
 		}
 
-		logger().fine("'%s' matches prefix '%s' for command '%s'.".formatted(walker.get(), prefix(), name()));
+		//logger().finest("'%s' matches prefix '%s' for command '%s'.".formatted(walker.get(), prefix(), name()));
 
 		String command = walker.matchUntil(delimiter(), true);
 		if (!name().equals(command)) {
-			logger().fine("'%s' does not match command '%s'.".formatted(command, name()));
+			logger().finest("'%s' does not match command '%s'.".formatted(command, name()));
 			return false;
 		}
 
-		logger().fine("'%s' matches command '%s'.".formatted(command, name()));
+		logger().finest("'%s' matches command '%s'.".formatted(command, name()));
 		return true;
 	}
 

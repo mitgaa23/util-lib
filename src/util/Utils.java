@@ -1,6 +1,7 @@
 package util;
 
-import util.logging.core.ColorizedLogHandler;
+import util.logging.Log;
+import util.logging.ColorizedLogHandler;
 
 import java.util.logging.Logger;
 
@@ -10,10 +11,9 @@ public final class Utils {
 
 		init0();
 
-		long end = System.currentTimeMillis();
-		long duration = end - start;
+		long duration = System.currentTimeMillis() - start;
 
-		Logger logger = Logger.getLogger(Utils.class.getName());
+		Logger logger = Log.get(Utils.class);
 		logger.info("Utils initialized in %dms.".formatted(duration));
 	}
 
