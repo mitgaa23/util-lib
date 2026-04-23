@@ -1,8 +1,8 @@
 package app.commands;
 
-import api.core.Command;
-import api.core.CommandData;
 import api.util.StringWalker;
+import api.util.command.Command;
+import api.util.command.CommandData;
 
 public class ExitCommand extends Command {
 	public ExitCommand(CommandData data) {

@@ -1,17 +1,26 @@
 package api.util.logging;
 
 import api.util.ClassLocal;
-import api.util.logging.core.Logger;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class Log {
-	private static final ClassLocal<Logger> LOGGERS = new ClassLocal<>(Logger::new);
+	private static final ClassLocal<Logger> LOGGERS = new ClassLocal<>(c -> {
+		Logger logger = Logger.getLogger(c.getSimpleName());
+		logger.setLevel(Level.ALL);
+		return logger;
+	});
 
-	public static Logger get(Class<?> key) {
-		return LOGGERS.get(key);
+	private Log() {
 	}
 
 	public static void remove(Class<?> key) {
 		LOGGERS.remove(key);
+	}
+
+	public static Logger get(Class<?> key) {
+		return LOGGERS.get(key);
 	}
 
 	public static Logger set(Class<?> key, Logger value) {

@@ -6,8 +6,8 @@ import java.io.PrintStream;
 /**
  * <a href="https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b">Source of ansi escape codes</a>
  */
-public class StylizedPrintStream extends PrintStream {
-	public StylizedPrintStream(OutputStream out) {
+public class ColorizedPrintStream extends PrintStream {
+	public ColorizedPrintStream(OutputStream out) {
 		super(out);
 	}
 

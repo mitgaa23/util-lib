@@ -1,10 +1,9 @@
-package api.core;
+package api.util.command;
 
 import api.util.StringWalker;
 import api.util.logging.Log;
-import api.util.logging.core.Logger;
 
-import java.lang.System.Logger.Level;
+import java.util.logging.Logger;
 
 public abstract class Command {
 	private final CommandData data;
@@ -16,17 +15,17 @@ public abstract class Command {
 	}
 
 	public Logger logger() {
-		return Log.get(getClass()).ignore(Level.DEBUG);
+		return Log.get(getClass());
 	}
 
 	public boolean runOnMatch(String str) {
-		StringWalker walker = new StringWalker(str);
+		return runOnMatch(new StringWalker(str));
+	}
 
+	public boolean runOnMatch(StringWalker walker) {
 		if (!matches(walker)) {
 			return false;
 		}
-
-		logger().debug("'%s' fully matches, running command '%s' ...", str, name());
 
 		run(walker);
 		return true;
@@ -37,42 +36,47 @@ public abstract class Command {
 			return false;
 		}
 
+		walker.pos.push();
 		if (!validArgs(walker)) {
-			logger().debug("'%s' has invalid args for command '%s'.", walker.get(), name());
+			logger().warning("'%s' has invalid args for command '%s'.".formatted(walker.get(), name()));
 			return false;
 		}
+		walker.pos.pop();
 
-		logger().debug("'%s' has valid args for command '%s'.", walker.get(), name());
-		logger().debug("'%s' fully matches command '%s'", walker.get(), name());
+		logger().fine("'%s' has valid args for command '%s'.".formatted(walker.get(), name()));
+		logger().fine("'%s' fully matches command '%s'".formatted(walker.get(), name()));
 
 		return true;
-	}
-
-	public String name() {
-		return data.name();
 	}
 
 	protected abstract void run(StringWalker walker);
 
 	private boolean matchCommand(StringWalker walker) {
 		if (!walker.match(prefix(), true)) {
-			logger().debug("'%s' does not match prefix '%s' for command '%s'.", walker.get(), prefix(), name());
+			logger().fine("'%s' does not match prefix '%s' for command '%s'.".formatted(walker.get(),
+			                                                                            prefix(),
+			                                                                            name()
+			));
 			return false;
 		}
 
-		logger().debug("'%s' matches prefix '%s' for command '%s'.", walker.get(), prefix(), name());
+		logger().fine("'%s' matches prefix '%s' for command '%s'.".formatted(walker.get(), prefix(), name()));
 
 		String command = walker.matchUntil(delimiter(), true);
 		if (!name().equals(command)) {
-			logger().debug("'%s' does not match command '%s'.", walker.get(), name());
+			logger().fine("'%s' does not match command '%s'.".formatted(command, name()));
 			return false;
 		}
 
-		logger().debug("'%s' matches command '%s'.", walker.get(), name());
+		logger().fine("'%s' matches command '%s'.".formatted(command, name()));
 		return true;
 	}
 
 	protected abstract boolean validArgs(StringWalker walker);
+
+	public String name() {
+		return data.name();
+	}
 
 	public String prefix() {
 		return data.prefix();

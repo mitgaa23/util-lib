@@ -1,4 +1,4 @@
-package api.core;
+package api.util.command;
 
 import java.util.HashSet;
 import java.util.Optional;

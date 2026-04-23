@@ -1,4 +1,4 @@
-package api.core;
+package api.util.command;
 
 import java.util.Objects;
 
