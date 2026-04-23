@@ -1,6 +1,6 @@
-package util.logging;
+package me.mitgaa23.util_lib.util.logging;
 
-import util.logging.pretty.Colorizer;
+import me.mitgaa23.util_lib.util.logging.pretty.Colorizer;
 
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;

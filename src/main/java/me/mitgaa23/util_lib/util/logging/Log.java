@@ -1,6 +1,6 @@
-package util.logging;
+package me.mitgaa23.util_lib.util.logging;
 
-import util.collection.ClassLocal;
+import me.mitgaa23.util_lib.util.collection.ClassLocal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

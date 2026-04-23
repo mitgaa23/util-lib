@@ -1,4 +1,4 @@
-package util.collection;
+package me.mitgaa23.util_lib.util.collection;
 
 import java.util.Map;
 import java.util.WeakHashMap;

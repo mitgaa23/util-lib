@@ -1,4 +1,4 @@
-package api.command;
+package me.mitgaa23.util_lib.api.command;
 
 import java.util.HashSet;
 import java.util.Optional;

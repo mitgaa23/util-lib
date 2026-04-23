@@ -1,4 +1,4 @@
-package util.logging.pretty;
+package me.mitgaa23.util_lib.util.logging.pretty;
 
 import java.util.function.Function;
 import java.util.regex.Matcher;

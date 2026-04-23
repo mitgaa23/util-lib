@@ -1,8 +1,8 @@
-package api.test.commands;
+package me.mitgaa23.util_lib.api.test.commands;
 
-import util.collection.StringWalker;
-import api.command.Command;
-import api.command.CommandData;
+import me.mitgaa23.util_lib.util.collection.StringWalker;
+import me.mitgaa23.util_lib.api.command.Command;
+import me.mitgaa23.util_lib.api.command.CommandData;
 
 public class ExitCommand extends Command {
 	public ExitCommand(CommandData data) {

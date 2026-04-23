@@ -1,8 +1,8 @@
-package api.test.commands;
+package me.mitgaa23.util_lib.api.test.commands;
 
-import api.command.Command;
-import api.command.CommandData;
-import util.collection.StringWalker;
+import me.mitgaa23.util_lib.api.command.Command;
+import me.mitgaa23.util_lib.api.command.CommandData;
+import me.mitgaa23.util_lib.util.collection.StringWalker;
 
 public class EchoCommand extends Command {
 	public EchoCommand(CommandData build) {
