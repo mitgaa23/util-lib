@@ -1,7 +1,7 @@
-package api.util.command;
+package api.command;
 
-import api.util.StringWalker;
-import api.util.logging.Log;
+import util.collection.StringWalker;
+import util.logging.Log;
 
 import java.util.logging.Logger;
 

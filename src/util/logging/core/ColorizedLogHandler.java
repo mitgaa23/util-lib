@@ -1,6 +1,6 @@
-package api.util.logging.core;
+package util.logging.core;
 
-import api.util.logging.pretty.Colorizer;
+import util.logging.pretty.Colorizer;
 
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;

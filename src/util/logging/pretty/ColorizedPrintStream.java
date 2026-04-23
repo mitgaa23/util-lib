@@ -1,4 +1,4 @@
-package api.util.logging.pretty;
+package util.logging.pretty;
 
 import java.io.OutputStream;
 import java.io.PrintStream;

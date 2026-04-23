@@ -1,4 +1,4 @@
-package api.util;
+package util.collection;
 
 import java.util.Map;
 import java.util.WeakHashMap;

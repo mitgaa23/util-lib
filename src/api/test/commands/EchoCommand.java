@@ -1,8 +1,8 @@
-package app.commands;
+package api.test.commands;
 
-import api.util.command.Command;
-import api.util.command.CommandData;
-import api.util.StringWalker;
+import api.command.Command;
+import api.command.CommandData;
+import util.collection.StringWalker;
 
 public class EchoCommand extends Command {
 	public EchoCommand(CommandData build) {

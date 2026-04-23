@@ -1,4 +1,4 @@
-package api.util.logging.pretty;
+package util.logging.pretty;
 
 import java.util.function.Function;
 import java.util.regex.Matcher;

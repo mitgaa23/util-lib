@@ -1,12 +1,12 @@
-package app;
+package api.test;
 
-import api.util.command.CommandData;
-import api.util.command.Commander;
-import api.util.logging.Log;
-import api.util.logging.core.ColorizedLogHandler;
-import app.commands.EchoCommand;
-import app.commands.ExitCommand;
-import app.commands.TestCommand;
+import api.command.CommandData;
+import api.command.Commander;
+import api.test.commands.EchoCommand;
+import api.test.commands.ExitCommand;
+import api.test.commands.TestCommand;
+import util.Utils;
+import util.logging.Log;
 
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -16,7 +16,7 @@ public final class Main {
 	}
 
 	public static void main(String[] args) {
-		ColorizedLogHandler.init();
+		Utils.init();
 
 		Logger logger = Log.get(Main.class);
 		logger.info("Initializing ...");

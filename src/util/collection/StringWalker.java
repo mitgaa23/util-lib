@@ -1,4 +1,4 @@
-package api.util;
+package util.collection;
 
 public class StringWalker {
 	public final VersionStack<Integer> pos = new VersionStack<>(0);

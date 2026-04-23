@@ -1,6 +1,6 @@
-package api.util.logging;
+package util.logging;
 
-import api.util.ClassLocal;
+import util.collection.ClassLocal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

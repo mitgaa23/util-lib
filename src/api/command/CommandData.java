@@ -1,4 +1,4 @@
-package api.util.command;
+package api.command;
 
 import java.util.Objects;
 
