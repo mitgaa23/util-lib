@@ -1,7 +1,7 @@
-package me.mitgaa23.util_lib.util;
+package me.mitgaa23.util_lib;
 
-import me.mitgaa23.util_lib.util.logging.Log;
-import me.mitgaa23.util_lib.util.logging.ColorizedLogHandler;
+import me.mitgaa23.util_lib.logging.Log;
+import me.mitgaa23.util_lib.logging.ColorizedLogHandler;
 
 import java.util.logging.Logger;
 

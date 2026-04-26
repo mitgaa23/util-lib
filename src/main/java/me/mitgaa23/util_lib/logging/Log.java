@@ -1,16 +1,21 @@
-package me.mitgaa23.util_lib.util.logging;
+package me.mitgaa23.util_lib.logging;
 
-import me.mitgaa23.util_lib.util.collection.ClassLocal;
+import me.mitgaa23.util_lib.Utils;
+import me.mitgaa23.util_lib.collection.ClassLocal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class Log {
 	private static final ClassLocal<Logger> LOGGERS = new ClassLocal<>(c -> {
-		Logger logger = Logger.getLogger(c.getName());
+		Logger logger = Logger.getLogger(c.getSimpleName());
 		logger.setLevel(Level.ALL);
 		return logger;
 	});
+
+	static {
+		Utils.init();
+	}
 
 	private Log() {
 	}

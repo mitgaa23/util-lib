@@ -1,4 +1,4 @@
-package me.mitgaa23.util_lib.util.logging.pretty;
+package me.mitgaa23.util_lib.logging.pretty;
 
 import java.io.OutputStream;
 import java.io.PrintStream;

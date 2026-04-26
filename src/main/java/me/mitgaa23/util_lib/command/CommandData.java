@@ -1,4 +1,4 @@
-package me.mitgaa23.util_lib.api.command;
+package me.mitgaa23.util_lib.command;
 
 import java.util.Objects;
 

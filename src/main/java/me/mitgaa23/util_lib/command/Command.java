@@ -1,7 +1,7 @@
-package me.mitgaa23.util_lib.api.command;
+package me.mitgaa23.util_lib.command;
 
-import me.mitgaa23.util_lib.util.collection.StringWalker;
-import me.mitgaa23.util_lib.util.logging.Log;
+import me.mitgaa23.util_lib.collection.StringWalker;
+import me.mitgaa23.util_lib.logging.Log;
 
 import java.util.logging.Logger;
 

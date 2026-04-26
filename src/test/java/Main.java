@@ -1,12 +1,10 @@
-package me.mitgaa23.util_lib.api.test;
-
-import me.mitgaa23.util_lib.api.command.CommandData;
-import me.mitgaa23.util_lib.api.command.Commander;
+import me.mitgaa23.util_lib.command.CommandData;
+import me.mitgaa23.util_lib.command.Commander;
 import me.mitgaa23.util_lib.api.test.commands.EchoCommand;
 import me.mitgaa23.util_lib.api.test.commands.ExitCommand;
 import me.mitgaa23.util_lib.api.test.commands.TestCommand;
-import me.mitgaa23.util_lib.util.Utils;
-import me.mitgaa23.util_lib.util.logging.Log;
+import me.mitgaa23.util_lib.Utils;
+import me.mitgaa23.util_lib.logging.Log;
 
 import java.util.Scanner;
 import java.util.logging.Logger;

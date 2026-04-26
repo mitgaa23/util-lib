@@ -1,4 +1,4 @@
-package me.mitgaa23.util_lib.util.collection;
+package me.mitgaa23.util_lib.collection;
 
 public class StringWalker {
 	public final VersionStack<Integer> pos = new VersionStack<>(0);
