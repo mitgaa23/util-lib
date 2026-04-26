@@ -1,4 +1,4 @@
-package me.mitgaa23.util_lib.math;
+package me.mitgaa23.util_lib.math.modules;
 
 import me.mitgaa23.util_lib.logging.Log;
 
