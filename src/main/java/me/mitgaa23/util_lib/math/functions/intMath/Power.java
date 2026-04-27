@@ -35,6 +35,10 @@ public final class Power {
 
 	/// Branchless modulo version of [WikiPedia Article](https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
 	public static long binaryMod(long n, long exp, long mod) {
+		if (mod <= 0) {
+			throw new IllegalArgumentException("mod %d <= 0".formatted(mod));
+		}
+
 		if (exp < 0) {
 			return 0;
 		}
