@@ -49,13 +49,14 @@ public final class Power {
 
 		long multiple = 1;
 
-		while (exp > 1L) {
+		while (exp > 1) {
 			multiple *= (~exp & 1) + (exp & 1) * n;
-			exp >>= 1;
-			n *= n;
-
-			n %= mod;
 			multiple %= mod;
+
+			n *= n;
+			n %= mod;
+
+			exp >>= 1;
 		}
 
 		return (n * multiple) % mod;
