@@ -1,4 +1,4 @@
-package me.mitgaa23.util_lib.math.functions;
+package me.mitgaa23.util_lib.math.functions.bigMath;
 
 import me.mitgaa23.util_lib.logging.Log;
 import me.mitgaa23.util_lib.math.modules.IntMath;
@@ -13,26 +13,26 @@ public final class RhoFactorization {
 	private static final Logger LOGGER = Log.get(RhoFactorization.class);
 
 	static {
-		LOGGER.setLevel(Level.FINER);
+		LOGGER.setLevel(Level.INFO);
 	}
 
 	private RhoFactorization() {
 	}
 
-	public static RhoFactors factorize(BigInteger n) {
+	public static SemiPrime factorize(BigInteger n) {
 		Random rnd = new Random();
 
 		while (true) {
 			BigInteger factor = tryFactorization(n, rnd);
 
 			if (!BigInteger.ONE.equals(factor)) {
-				final RhoFactors factors = new RhoFactors(n, factor, n.divide(factor));
-				LOGGER.finer("Rho factorization successfully completed. Result: %s".formatted(factors));
+				final SemiPrime factors = new SemiPrime(n, factor, n.divide(factor));
+				LOGGER.info("Rho factorization: %s".formatted(factors));
 
 				return factors;
 			}
 
-			LOGGER.fine("Rho factorization failed, retrying ...");
+			LOGGER.warning("Rho factorization failed, retrying ...");
 		}
 	}
 
@@ -110,12 +110,5 @@ public final class RhoFactorization {
 
 	private static BigInteger f(BigInteger x, BigInteger c, BigInteger n) {
 		return x.multiply(x).add(c).mod(n);
-	}
-
-	public record RhoFactors(BigInteger n, BigInteger a, BigInteger b) {
-		@Override
-		public String toString() {
-			return "RhoFactors{%d * %d = %d}".formatted(a, b, n);
-		}
 	}
 }
