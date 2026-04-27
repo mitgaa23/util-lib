@@ -1,6 +1,10 @@
 package me.mitgaa23.util_lib.math.modules;
 
 import me.mitgaa23.util_lib.logging.Log;
+import me.mitgaa23.util_lib.math.functions.intMath.GreatestCommonDivisor;
+import me.mitgaa23.util_lib.math.functions.intMath.Logarithm;
+import me.mitgaa23.util_lib.math.functions.intMath.Power;
+import me.mitgaa23.util_lib.math.functions.intMath.SquareRoot;
 
 import java.util.logging.Logger;
 
@@ -10,93 +14,36 @@ public final class IntMath {
 	private IntMath() {
 	}
 
-	public static int sqrt(int num) {
-		return (int) sqrt((long) num);
-	}
-
-	/// [WikiPedia Article](https://en.wikipedia.org/wiki/Square_root_algorithms#Binary_numeral_system_(base_2))
-	public static long sqrt(long n) {
-		if (n < 0) {
-			throw new IllegalArgumentException("Cannot take root of negative number %d.".formatted(n));
-		}
-
-		long result = 0;
-		long op = n;
-
-		// 4 ^ exp < n
-		long exp = log2(n) >> 1;
-		long pow4 = 1L << (exp << 1);
-
-		while (pow4 != 0) {
-			long sum = result + pow4;
-
-			if (op >= sum) {
-				op -= sum;
-				result += pow4 << 1;
-			}
-
-			result >>= 1;
-			pow4 >>= 2; // pow4 / 4
-		}
-
-		return result;
-	}
-
-	public static int log2(long n) {
-		return Long.SIZE - 1 - Long.numberOfLeadingZeros(n);
-	}
-
-	public static int log2(int n) {
-		return Integer.SIZE - 1 - Integer.numberOfLeadingZeros(n);
-	}
-
 	public static int gcdEuler(int a, int b) {
-		return (int) gcdEuler((long) a, b);
+		return GreatestCommonDivisor.euler(a, b);
 	}
 
 	public static long gcdEuler(long a, long b) {
-		long min = Math.min(a, b);
-		b = Math.max(a, b);
-		a = min;
-
-		while (b != 0) {
-			long oldA = a;
-			a = b;
-			b = oldA % b;
-		}
-
-		return a;
+		return GreatestCommonDivisor.euler(a, b);
 	}
 
-	public static int gcd(int a, int b) {
-		return (int) gcd((long) a, b);
+	public static int gcdBinary(int a, int b) {
+		return GreatestCommonDivisor.binary(a, b);
 	}
 
-	/// [WikiPedia Article](https://de.wikipedia.org/wiki/Steinscher_Algorithmus)
-	public static long gcd(long a, long b) {
-		if (a == 0) {
-			return b;
-		}
+	public static long gcdBinary(long a, long b) {
+		return GreatestCommonDivisor.binary(a, b);
+	}
 
-		long min = Math.min(a, b);
-		b = Math.max(a, b);
-		a = min;
+	public static int log2(long n) {
+		return Logarithm.base2(n);
+	}
 
-		int k = Long.numberOfTrailingZeros(a | b);
-		a >>= k;
+	public static int log2(int n) {
+		return Logarithm.base2(n);
+	}
 
-		do {
-			b >>= Long.numberOfTrailingZeros(b);
+	public static int sqrt(int n) {
+		return SquareRoot.binary(n);
+	}
 
-			min = Math.min(a, b);
-			b = Math.max(a, b);
-			a = min;
-
-			b -= a;
-
-		} while (b != 0);
-
-		return a << k;
+	public static long sqrt(long n) {
+		return SquareRoot.binary(n);
 	}
 
 	public static int sign(long n) {
@@ -105,5 +52,21 @@ public final class IntMath {
 
 	public static int sign(int n) {
 		return Integer.signum(n);
+	}
+
+	public static long powerMod(long n, long exp, long mod) {
+		return Power.binaryMod(n, exp, mod);
+	}
+
+	public static int powerMod(int n, int exp, int mod) {
+		return Power.binaryMod(n, exp, mod);
+	}
+
+	public static long power(long n, long exp) {
+		return Power.binary(n, exp);
+	}
+
+	public static int power(int n, int exp) {
+		return Power.binary(n, exp);
 	}
 }
