@@ -32,23 +32,17 @@ public final class GreatestCommonDivisor {
 			return b;
 		}
 
-		long min = Math.min(a, b);
-		b = Math.max(a, b);
-		a = min;
-
 		int k = Long.numberOfTrailingZeros(a | b);
 		a >>= k;
 
 		do {
 			b >>= Long.numberOfTrailingZeros(b);
 
-			min = Math.min(a, b);
-			b = Math.max(a, b);
+			long min = Math.abs(Math.min(a, b));
+			b = Math.max(a, b) - min;
 			a = min;
 
-			b -= a;
-
-		} while (b != 0);
+		} while (b != 0 && a != 0);
 
 		return a << k;
 	}

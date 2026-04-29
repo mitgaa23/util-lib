@@ -54,19 +54,19 @@ public final class IntMath {
 		return Integer.signum(n);
 	}
 
-	public static long powerMod(long n, long exp, long mod) {
+	public static long powMod(long n, long exp, long mod) {
 		return Power.binaryMod(n, exp, mod);
 	}
 
-	public static int powerMod(int n, int exp, int mod) {
+	public static int powMod(int n, int exp, int mod) {
 		return Power.binaryMod(n, exp, mod);
 	}
 
-	public static long power(long n, long exp) {
+	public static long pow(long n, long exp) {
 		return Power.binary(n, exp);
 	}
 
-	public static int power(int n, int exp) {
+	public static int pow(int n, int exp) {
 		return Power.binary(n, exp);
 	}
 }

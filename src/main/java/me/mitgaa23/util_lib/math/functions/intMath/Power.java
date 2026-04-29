@@ -10,7 +10,7 @@ public final class Power {
 
 	/// Branchless version of [WikiPedia Article](https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
 	public static long binary(long n, long exp) {
-		if (exp < 0) {
+		if (n == 0 || exp < 0) {
 			return 0;
 		}
 
@@ -39,7 +39,7 @@ public final class Power {
 			throw new IllegalArgumentException("mod %d <= 0".formatted(mod));
 		}
 
-		if (exp < 0) {
+		if (n == 0 || exp < 0) {
 			return 0;
 		}
 
