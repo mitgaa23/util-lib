@@ -21,8 +21,6 @@ public class ColorizedLogHandler extends Handler {
 
 	public static void init() {
 		LogManager manager = LogManager.getLogManager();
-		manager.reset();
-
 		Logger rootLogger = manager.getLogger("");
 
 		if (rootLogger != null) {
@@ -38,7 +36,7 @@ public class ColorizedLogHandler extends Handler {
 		String msg = record.getMessage();
 		String name = record.getLoggerName();
 		Instant instant = record.getInstant();
-		String threadName = threadInfo.getThreadName();
+		String threadName = String.valueOf(threadInfo != null ? threadInfo.getThreadName() : null);
 		LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
 
 		String format = LOG_FORMAT.formatted(getColor(level));
