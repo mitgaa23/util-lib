@@ -1,7 +1,7 @@
 package me.mitgaa23.util_lib.database.types;
 
-import tableGenerator.StatementPreparer;
-import tableGenerator.proxy.SQLTypeHandler;
+import me.mitgaa23.util_lib.database.StatementPreparer;
+import me.mitgaa23.util_lib.database.proxy.SQLTypeHandler;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;

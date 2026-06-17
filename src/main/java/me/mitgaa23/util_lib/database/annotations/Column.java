@@ -1,6 +1,6 @@
 package me.mitgaa23.util_lib.database.annotations;
 
-import tableGenerator.proxy.SQLTypeHandler;
+import me.mitgaa23.util_lib.database.proxy.SQLTypeHandler;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

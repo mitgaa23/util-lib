@@ -1,6 +1,7 @@
 package me.mitgaa23.util_lib.database.proxy;
 
-import tableGenerator.StatementPreparer;
+
+import me.mitgaa23.util_lib.database.StatementPreparer;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;

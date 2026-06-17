@@ -1,9 +1,8 @@
 package me.mitgaa23.util_lib.database;
 
-import lombok.Getter;
-import tableGenerator.annotations.Column;
-import tableGenerator.proxy.SQLTypeHandler;
-import tableGenerator.proxy.TableProxy;
+import me.mitgaa23.util_lib.database.annotations.Column;
+import me.mitgaa23.util_lib.database.proxy.SQLTypeHandler;
+import me.mitgaa23.util_lib.database.proxy.TableProxy;
 
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -13,7 +12,6 @@ public class Table {
 	private final String name;
 	private final Connection connection;
 
-	@Getter
 	private final Class<?> clazz;
 
 	private final List<Column> markers;
@@ -43,6 +41,14 @@ public class Table {
 		}
 
 		markers.sort(Comparator.comparingInt(Column::index));
+	}
+
+	public Class<?> getClazz() {
+		return clazz;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public void drop() throws SQLException {
