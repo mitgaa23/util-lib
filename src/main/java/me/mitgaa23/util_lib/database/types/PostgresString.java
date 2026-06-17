@@ -21,8 +21,8 @@ public interface PostgresString extends SQLTypeHandler {
 	}
 
 	@Override
-	default void copyToField(String columnName, ResultSet set, Field field, Object obj) throws IllegalAccessException, SQLException {
-		String value = set.getString(columnName);
+	default void copyToField(String columnName, ResultSet resultSet, Field field, Object obj) throws IllegalAccessException, SQLException {
+		String value = resultSet.getString(columnName);
 
 		if (field.getType() == String.class) {
 			field.set(obj, value);

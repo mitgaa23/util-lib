@@ -37,5 +37,5 @@ public interface SQLTypeHandler {
 
 	void prepareStatement(StatementPreparer preparer, Object obj) throws SQLException;
 
-	void copyToField(String columnName, ResultSet set, Field field, Object obj) throws IllegalAccessException, SQLException;
+	void copyToField(String columnName, ResultSet resultSet, Field field, Object obj) throws IllegalAccessException, SQLException;
 }

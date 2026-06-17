@@ -27,8 +27,8 @@ public interface PostgresDate extends SQLTypeHandler {
 	}
 
 	@Override
-	default void copyToField(String columnName, ResultSet set, Field field, Object obj) throws IllegalAccessException, SQLException {
-		Date date = set.getDate(columnName);
+	default void copyToField(String columnName, ResultSet resultSet, Field field, Object obj) throws IllegalAccessException, SQLException {
+		Date date = resultSet.getDate(columnName);
 
 		if (field.getType() == Date.class) {
 			field.set(obj, date);

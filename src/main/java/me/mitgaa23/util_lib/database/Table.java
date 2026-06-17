@@ -62,7 +62,7 @@ public class Table {
 		}
 	}
 
-	public void create(boolean ignoreIfExisting) throws SQLException {
+	public void createTable(boolean ignoreIfExisting) throws SQLException {
 		Objects.requireNonNull(connection, "connection cannot be null");
 
 		StringBuilder sb = new StringBuilder();
@@ -129,7 +129,8 @@ public class Table {
 		}
 	}
 
-	public <T> T update(T obj) throws SQLException {
+	/// update the row that corresponds to the given object
+	public <T> T push(T obj) throws SQLException {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("UPDATE ");
@@ -220,7 +221,7 @@ public class Table {
 		}
 	}
 
-	public <T> T deleteFromTable(T obj) throws SQLException {
+	public <T> T delete(T obj) throws SQLException {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("DELETE FROM ");
@@ -330,7 +331,8 @@ public class Table {
 		return obj;
 	}
 
-	public <T> T pullFromTable(T obj) throws SQLException {
+	/// pull the data from the row that corresponds to the given object and modifies the content of the object
+	public <T> T pull(T obj) throws SQLException {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("SELECT ");
