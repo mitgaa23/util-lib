@@ -14,7 +14,7 @@ public class Table {
 
 	private final Class<?> clazz;
 
-	private final List<Column> markers;
+	private final List<Column> columns;
 
 	private final HashMap<String, Field> fields;
 	private final HashMap<String, SQLTypeHandler> handlers;
@@ -25,22 +25,22 @@ public class Table {
 		this.connection = connection;
 
 		this.fields = new HashMap<>();
-		this.markers = new ArrayList<>();
+		this.columns = new ArrayList<>();
 		this.handlers = new HashMap<>();
 
 		for (Field field : clazz.getFields()) {
 			Column column = field.getAnnotation(Column.class);
 
-			markers.add(column);
+			columns.add(column);
 			fields.put(column.value(), field);
 		}
 
-		for (Column marker : markers) {
-			SQLTypeHandler proxy = TableProxy.getProxy(marker.handler());
-			handlers.put(marker.value(), proxy);
+		for (Column column : columns) {
+			SQLTypeHandler proxy = TableProxy.getProxy(column.handler());
+			handlers.put(column.value(), proxy);
 		}
 
-		markers.sort(Comparator.comparingInt(Column::index));
+		columns.sort(Comparator.comparingInt(Column::index));
 	}
 
 	public Class<?> getClazz() {
@@ -51,7 +51,7 @@ public class Table {
 		return name;
 	}
 
-	public void drop() throws SQLException {
+	public void dropTable() throws SQLException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("DROP TABLE IF EXISTS ");
 		sb.append(name);
@@ -76,22 +76,22 @@ public class Table {
 		sb.append(name);
 		sb.append(" (");
 
-		for (int i = 0; i < markers.size(); i++) {
-			Column marker = markers.get(i);
-			sb.append(marker.value());
+		for (int i = 0; i < columns.size(); i++) {
+			Column column = columns.get(i);
+			sb.append(column.value());
 			sb.append(" ");
 
-			SQLTypeHandler handler = handlers.get(marker.value());
+			SQLTypeHandler handler = handlers.get(column.value());
 			sb.append(handler.getName());
 
-			int[] params = marker.params();
+			int[] params = column.params();
 			if (params.length != 0) {
 				sb.append("(");
 				appendParams(params, sb);
 				sb.append(")");
 			}
 
-			if (i < markers.size() - 1) {
+			if (i < columns.size() - 1) {
 				sb.append(", ");
 			}
 		}
@@ -99,13 +99,13 @@ public class Table {
 		sb.append(", PRIMARY KEY (");
 
 		int primaryKeys = 0;
-		for (Column marker : markers) {
-			if (marker.primary()) {
+		for (Column column : columns) {
+			if (column.primary()) {
 				if (primaryKeys > 0) {
 					sb.append(", ");
 				}
 
-				sb.append(marker.value());
+				sb.append(column.value());
 				primaryKeys++;
 			}
 		}
@@ -140,11 +140,11 @@ public class Table {
 		List<Column> affectedColumns = new ArrayList<>();
 		List<Column> pulledColumns = new ArrayList<>();
 
-		for (Column marker : markers) {
-			SQLTypeHandler handler = handlers.get(marker.value());
+		for (Column column : columns) {
+			SQLTypeHandler handler = handlers.get(column.value());
 
 			if (handler.isPulledFromDB()) {
-				pulledColumns.add(marker);
+				pulledColumns.add(column);
 				continue;
 			}
 
@@ -152,17 +152,17 @@ public class Table {
 				sb.append(", ");
 			}
 
-			affectedColumns.add(marker);
+			affectedColumns.add(column);
 
-			sb.append(marker.value());
+			sb.append(column.value());
 			sb.append(" = ?");
 		}
 
 		sb.append(" WHERE ");
 
 		List<Column> primaryColumns = new ArrayList<>();
-		for (Column marker : markers) {
-			if (!marker.primary()) {
+		for (Column column : columns) {
+			if (!column.primary()) {
 				continue;
 			}
 
@@ -170,10 +170,10 @@ public class Table {
 				sb.append(" AND");
 			}
 
-			sb.append(marker.value());
+			sb.append(column.value());
 			sb.append(" = ?");
 
-			primaryColumns.add(marker);
+			primaryColumns.add(column);
 		}
 
 		sb.append(" RETURNING *;");
@@ -195,9 +195,9 @@ public class Table {
 	}
 
 	protected <T> void prepareColumnNames(T obj, List<Column> affectedColumns, StatementPreparer preparer) throws SQLException, IllegalAccessException {
-		for (Column marker : affectedColumns) {
-			Field field = fields.get(marker.value());
-			SQLTypeHandler handler = handlers.get(marker.value());
+		for (Column column : affectedColumns) {
+			Field field = fields.get(column.value());
+			SQLTypeHandler handler = handlers.get(column.value());
 
 			handler.prepareStatement(preparer, field.get(obj));
 		}
@@ -210,13 +210,13 @@ public class Table {
 			throw new IllegalStateException("No result was returned");
 		}
 
-		for (Column marker : pulledColumns) {
-			Field field = fields.get(marker.value());
+		for (Column column : pulledColumns) {
+			Field field = fields.get(column.value());
 
 			if (field != null) {
-				SQLTypeHandler handler = handlers.get(marker.value());
+				SQLTypeHandler handler = handlers.get(column.value());
 
-				handler.copyToField(marker.value(), result, field, obj);
+				handler.copyToField(column.value(), result, field, obj);
 			}
 		}
 	}
@@ -233,9 +233,9 @@ public class Table {
 		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
 			StatementPreparer preparer = new StatementPreparer(statement);
 
-			for (Column marker : affectedColumns) {
-				SQLTypeHandler handler = handlers.get(marker.value());
-				Field field = fields.get(marker.value());
+			for (Column column : affectedColumns) {
+				SQLTypeHandler handler = handlers.get(column.value());
+				Field field = fields.get(column.value());
 
 				handler.prepareStatement(preparer, field.get(obj));
 			}
@@ -252,8 +252,8 @@ public class Table {
 	protected List<Column> appendWhereClause(StringBuilder sb) {
 		List<Column> affectedColumns = new ArrayList<>();
 
-		for (Column marker : markers) {
-			if (!marker.primary()) {
+		for (Column column : columns) {
+			if (!column.primary()) {
 				continue;
 			}
 
@@ -261,10 +261,10 @@ public class Table {
 				sb.append(" AND ");
 			}
 
-			sb.append(marker.value());
+			sb.append(column.value());
 			sb.append(" = ?");
 
-			affectedColumns.add(marker);
+			affectedColumns.add(column);
 		}
 
 		sb.append(';');
@@ -282,11 +282,11 @@ public class Table {
 		List<Column> affectedColumns = new ArrayList<>();
 		List<Column> pulledColumns = new ArrayList<>();
 
-		for (Column marker : markers) {
-			SQLTypeHandler handler = handlers.get(marker.value());
+		for (Column column : columns) {
+			SQLTypeHandler handler = handlers.get(column.value());
 
 			if (handler.isPulledFromDB()) {
-				pulledColumns.add(marker);
+				pulledColumns.add(column);
 				continue;
 			}
 
@@ -294,8 +294,8 @@ public class Table {
 				sb.append(", ");
 			}
 
-			sb.append(marker.value());
-			affectedColumns.add(marker);
+			sb.append(column.value());
+			affectedColumns.add(column);
 		}
 
 		sb.append(") VALUES (");
@@ -313,9 +313,9 @@ public class Table {
 		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
 			StatementPreparer preparer = new StatementPreparer(statement);
 
-			for (Column marker : affectedColumns) {
-				Field field = fields.get(marker.value());
-				SQLTypeHandler handler = handlers.get(marker.value());
+			for (Column column : affectedColumns) {
+				Field field = fields.get(column.value());
+				SQLTypeHandler handler = handlers.get(column.value());
 
 				handler.prepareStatement(preparer, field.get(obj));
 			}
@@ -337,11 +337,11 @@ public class Table {
 
 		sb.append("SELECT ");
 
-		for (int i = 0; i < markers.size(); i++) {
-			Column marker = markers.get(i);
-			sb.append(marker.value());
+		for (int i = 0; i < columns.size(); i++) {
+			Column column = columns.get(i);
+			sb.append(column.value());
 
-			if (i < markers.size() - 1) {
+			if (i < columns.size() - 1) {
 				sb.append(", ");
 			}
 		}
@@ -355,9 +355,9 @@ public class Table {
 		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
 			StatementPreparer preparer = new StatementPreparer(statement);
 
-			for (Column marker : affectedColumns) {
-				SQLTypeHandler handler = handlers.get(marker.value());
-				Field field = fields.get(marker.value());
+			for (Column column : affectedColumns) {
+				SQLTypeHandler handler = handlers.get(column.value());
+				Field field = fields.get(column.value());
 
 				handler.prepareStatement(preparer, field.get(obj));
 			}
@@ -368,11 +368,11 @@ public class Table {
 				throw new IllegalStateException("No result was returned");
 			}
 
-			for (Column marker : markers) {
-				SQLTypeHandler handler = handlers.get(marker.value());
-				Field field = fields.get(marker.value());
+			for (Column column : columns) {
+				SQLTypeHandler handler = handlers.get(column.value());
+				Field field = fields.get(column.value());
 
-				handler.copyToField(marker.value(), result, field, obj);
+				handler.copyToField(column.value(), result, field, obj);
 			}
 
 		} catch (IllegalAccessException e) {
