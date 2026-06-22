@@ -3,23 +3,42 @@ package me.mitgaa23.util_lib.database;
 import me.mitgaa23.util_lib.database.annotations.Column;
 import me.mitgaa23.util_lib.database.proxy.SQLTypeHandler;
 import me.mitgaa23.util_lib.database.proxy.TableProxy;
+import me.mitgaa23.util_lib.logging.Log;
+import me.mitgaa23.util_lib.logging.spinner.Spinner;
 
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Logger;
 
-public class Table {
+/// TODO: Make less Postgres specific
+public class Table<T> {
+	private static final Logger LOGGER = Log.get(Table.class);
+
 	private final String name;
 	private final Connection connection;
 
-	private final Class<?> clazz;
+	private final Class<T> clazz;
 
 	private final List<Column> columns;
 
 	private final HashMap<String, Field> fields;
 	private final HashMap<String, SQLTypeHandler> handlers;
+	private final List<Column> nonPulledColumns;
+	private final List<Column> pulledColumns;
+	private final List<Column> primaryKeyColumns;
 
-	public Table(String name, Class<?> clazz, Connection connection) {
+	private final PreparedStatement updateStatement;
+	private final PreparedStatement dropStatement;
+	private final PreparedStatement createStatement;
+	private final PreparedStatement deleteStatement;
+	private final PreparedStatement insertStatement;
+	private final PreparedStatement pullStatement;
+
+	public Table(String name, Class<T> clazz, Connection connection) throws SQLException {
 		this.name = name;
 		this.clazz = clazz;
 		this.connection = connection;
@@ -33,45 +52,91 @@ public class Table {
 
 			columns.add(column);
 			fields.put(column.value(), field);
-		}
 
-		for (Column column : columns) {
 			SQLTypeHandler proxy = TableProxy.getProxy(column.handler());
 			handlers.put(column.value(), proxy);
 		}
 
 		columns.sort(Comparator.comparingInt(Column::index));
+
+		List<Column> nonPulledColumns = new ArrayList<>();
+		List<Column> pulledColumns = new ArrayList<>();
+		List<Column> primaryKeyColumns = new ArrayList<>();
+
+		initColumnList(primaryKeyColumns, pulledColumns, nonPulledColumns);
+
+		this.pulledColumns = Collections.unmodifiableList(pulledColumns);
+		this.nonPulledColumns = Collections.unmodifiableList(nonPulledColumns);
+		this.primaryKeyColumns = Collections.unmodifiableList(primaryKeyColumns);
+
+		this.dropStatement = connection.prepareStatement(getDropStatement());
+		this.updateStatement = connection.prepareStatement(getUpdateStatement());
+		this.createStatement = connection.prepareStatement(getCreateStatement());
+		this.deleteStatement = connection.prepareStatement(getDeleteStatement());
+		this.insertStatement = connection.prepareStatement(getInsertStatement());
+		this.pullStatement = connection.prepareStatement(getPullStatement());
 	}
 
-	public Class<?> getClazz() {
-		return clazz;
+	protected void initColumnList(List<Column> primaryKeyColumns, List<Column> pulledColumns, List<Column> nonPulledColumns) {
+		for (Column column : columns) {
+			SQLTypeHandler handler = handlers.get(column.value());
+
+			if (column.primary()) {
+				primaryKeyColumns.add(column);
+			}
+
+			if (handler.isPulledFromDB()) {
+				pulledColumns.add(column);
+
+			} else {
+				nonPulledColumns.add(column);
+			}
+		}
 	}
 
-	public String getName() {
-		return name;
+	private String getDropStatement() {
+		return "DROP TABLE IF EXISTS %s CASCADE;".formatted(name);
 	}
 
-	public void dropTable() throws SQLException {
+	private String getUpdateStatement() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("DROP TABLE IF EXISTS ");
+
+		sb.append("UPDATE ");
 		sb.append(name);
-		sb.append(" CASCADE;");
+		sb.append(" SET ");
 
-		try (Statement statement = connection.createStatement()) {
-			statement.executeUpdate(sb.toString());
+		for (int i = 0; i < nonPulledColumns.size(); i++) {
+			Column column = nonPulledColumns.get(i);
+
+			sb.append(column.value());
+			sb.append(" = ?");
+
+			if (i < nonPulledColumns.size() - 1) {
+				sb.append(", ");
+			}
 		}
+
+		sb.append(" WHERE ");
+
+		for (int i = 0; i < primaryKeyColumns.size(); i++) {
+			Column column = primaryKeyColumns.get(i);
+			sb.append(column.value());
+			sb.append(" = ?");
+
+			if (i < primaryKeyColumns.size() - 1) {
+				sb.append(" AND");
+			}
+		}
+
+		sb.append(" RETURNING *;");
+
+		return sb.toString();
 	}
 
-	public void createTable(boolean ignoreIfExisting) throws SQLException {
-		Objects.requireNonNull(connection, "connection cannot be null");
-
+	protected String getCreateStatement() {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("CREATE TABLE ");
-
-		if (ignoreIfExisting) {
-			sb.append("IF NOT EXISTS ");
-		}
+		sb.append("CREATE TABLE IF NOT EXISTS ");
 
 		sb.append(name);
 		sb.append(" (");
@@ -87,7 +152,16 @@ public class Table {
 			int[] params = column.params();
 			if (params.length != 0) {
 				sb.append("(");
-				appendParams(params, sb);
+
+				for (int j = 0; j < params.length; j++) {
+					int param = params[j];
+					sb.append(param);
+
+					if (j < params.length - 1) {
+						sb.append(", ");
+					}
+				}
+
 				sb.append(")");
 			}
 
@@ -111,228 +185,50 @@ public class Table {
 		}
 
 		sb.append("));");
-
-		try (Statement statement = connection.createStatement()) {
-			String string = sb.toString();
-			statement.executeUpdate(string);
-		}
+		return sb.toString();
 	}
 
-	protected static void appendParams(int[] params, StringBuilder sb) {
-		for (int j = 0; j < params.length; j++) {
-			int param = params[j];
-			sb.append(param);
-
-			if (j < params.length - 1) {
-				sb.append(", ");
-			}
-		}
-	}
-
-	/// update the row that corresponds to the given object
-	public <T> T push(T obj) throws SQLException {
+	private String getDeleteStatement() {
 		StringBuilder sb = new StringBuilder();
-
-		sb.append("UPDATE ");
-		sb.append(name);
-		sb.append(" SET ");
-
-		List<Column> affectedColumns = new ArrayList<>();
-		List<Column> pulledColumns = new ArrayList<>();
-
-		for (Column column : columns) {
-			SQLTypeHandler handler = handlers.get(column.value());
-
-			if (handler.isPulledFromDB()) {
-				pulledColumns.add(column);
-				continue;
-			}
-
-			if (!affectedColumns.isEmpty()) {
-				sb.append(", ");
-			}
-
-			affectedColumns.add(column);
-
-			sb.append(column.value());
-			sb.append(" = ?");
-		}
-
-		sb.append(" WHERE ");
-
-		List<Column> primaryColumns = new ArrayList<>();
-		for (Column column : columns) {
-			if (!column.primary()) {
-				continue;
-			}
-
-			if (!primaryColumns.isEmpty()) {
-				sb.append(" AND");
-			}
-
-			sb.append(column.value());
-			sb.append(" = ?");
-
-			primaryColumns.add(column);
-		}
-
-		sb.append(" RETURNING *;");
-
-		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
-			StatementPreparer preparer = new StatementPreparer(statement);
-
-			prepareColumnNames(obj, affectedColumns, preparer);
-			prepareColumnNames(obj, primaryColumns, preparer);
-
-			statement.execute();
-			saveToObject(obj, pulledColumns, statement);
-
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-
-		return obj;
-	}
-
-	protected <T> void prepareColumnNames(T obj, List<Column> affectedColumns, StatementPreparer preparer) throws SQLException, IllegalAccessException {
-		for (Column column : affectedColumns) {
-			Field field = fields.get(column.value());
-			SQLTypeHandler handler = handlers.get(column.value());
-
-			handler.prepareStatement(preparer, field.get(obj));
-		}
-	}
-
-	protected <T> void saveToObject(T obj, List<Column> pulledColumns, PreparedStatement statement) throws SQLException, IllegalAccessException {
-		ResultSet result = statement.getResultSet();
-
-		if (!result.next()) {
-			throw new IllegalStateException("No result was returned");
-		}
-
-		for (Column column : pulledColumns) {
-			Field field = fields.get(column.value());
-
-			if (field != null) {
-				SQLTypeHandler handler = handlers.get(column.value());
-
-				handler.copyToField(column.value(), result, field, obj);
-			}
-		}
-	}
-
-	public <T> T delete(T obj) throws SQLException {
-		StringBuilder sb = new StringBuilder();
-
 		sb.append("DELETE FROM ");
 		sb.append(name);
 		sb.append(" WHERE ");
-
-		List<Column> affectedColumns = appendWhereClause(sb);
-
-		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
-			StatementPreparer preparer = new StatementPreparer(statement);
-
-			for (Column column : affectedColumns) {
-				SQLTypeHandler handler = handlers.get(column.value());
-				Field field = fields.get(column.value());
-
-				handler.prepareStatement(preparer, field.get(obj));
-			}
-
-			statement.executeUpdate();
-
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-
-		return obj;
+		appendWhereClause(sb);
+		return sb.toString();
 	}
 
-	protected List<Column> appendWhereClause(StringBuilder sb) {
-		List<Column> affectedColumns = new ArrayList<>();
-
-		for (Column column : columns) {
-			if (!column.primary()) {
-				continue;
-			}
-
-			if (!affectedColumns.isEmpty()) {
-				sb.append(" AND ");
-			}
-
-			sb.append(column.value());
-			sb.append(" = ?");
-
-			affectedColumns.add(column);
-		}
-
-		sb.append(';');
-
-		return affectedColumns;
-	}
-
-	public <T> T insert(T obj) throws SQLException {
+	protected String getInsertStatement() {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("INSERT INTO ");
 		sb.append(name);
 		sb.append(" (");
 
-		List<Column> affectedColumns = new ArrayList<>();
-		List<Column> pulledColumns = new ArrayList<>();
+		for (int i = 0; i < nonPulledColumns.size(); i++) {
+			Column column = nonPulledColumns.get(i);
+			sb.append(column.value());
 
-		for (Column column : columns) {
-			SQLTypeHandler handler = handlers.get(column.value());
-
-			if (handler.isPulledFromDB()) {
-				pulledColumns.add(column);
-				continue;
-			}
-
-			if (!affectedColumns.isEmpty()) {
+			if (i < nonPulledColumns.size() - 1) {
 				sb.append(", ");
 			}
-
-			sb.append(column.value());
-			affectedColumns.add(column);
 		}
 
 		sb.append(") VALUES (");
 
-		for (int i = 0; i < affectedColumns.size(); i++) {
+		for (int i = 0; i < nonPulledColumns.size(); i++) {
 			sb.append('?');
 
-			if (i < affectedColumns.size() - 1) {
+			if (i < nonPulledColumns.size() - 1) {
 				sb.append(", ");
 			}
 		}
 
 		sb.append(") RETURNING *;");
 
-		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
-			StatementPreparer preparer = new StatementPreparer(statement);
-
-			for (Column column : affectedColumns) {
-				Field field = fields.get(column.value());
-				SQLTypeHandler handler = handlers.get(column.value());
-
-				handler.prepareStatement(preparer, field.get(obj));
-			}
-
-			statement.execute();
-
-			saveToObject(obj, pulledColumns, statement);
-
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-
-		return obj;
+		return sb.toString();
 	}
 
-	/// pull the data from the row that corresponds to the given object and modifies the content of the object
-	public <T> T pull(T obj) throws SQLException {
+	protected String getPullStatement() {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("SELECT ");
@@ -350,19 +246,234 @@ public class Table {
 		sb.append(name);
 		sb.append(" WHERE ");
 
-		List<Column> affectedColumns = appendWhereClause(sb);
+		appendWhereClause(sb);
+		sb.append(";");
+		return sb.toString();
+	}
 
-		try (PreparedStatement statement = connection.prepareStatement(sb.toString())) {
-			StatementPreparer preparer = new StatementPreparer(statement);
+	protected void appendWhereClause(StringBuilder sb) {
+		for (int i = 0; i < primaryKeyColumns.size(); i++) {
+			Column column = primaryKeyColumns.get(i);
+			sb.append(column.value());
+			sb.append(" = ?");
 
-			for (Column column : affectedColumns) {
+			if (i < primaryKeyColumns.size() - 1) {
+				sb.append(" AND ");
+			}
+		}
+	}
+
+	public Class<?> getClazz() {
+		return clazz;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void dropTable() throws SQLException {
+		dropStatement.executeUpdate();
+	}
+
+	public void createTable(boolean ignoreIfExisting) throws SQLException {
+		Objects.requireNonNull(connection, "connection cannot be null");
+
+		createStatement.executeUpdate();
+	}
+
+	/// update the row that corresponds to the given object
+	public T push(T obj) throws SQLException {
+		try {
+			StatementPreparer preparer = new StatementPreparer(updateStatement);
+
+			prepareColumnNames(obj, nonPulledColumns, preparer);
+			prepareColumnNames(obj, primaryKeyColumns, preparer);
+
+			updateStatement.execute();
+			saveToObject(obj, pulledColumns, updateStatement);
+
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+
+		return obj;
+	}
+
+	protected void prepareColumnNames(T obj, List<Column> affectedColumns, StatementPreparer preparer) throws SQLException, IllegalAccessException {
+		for (Column column : affectedColumns) {
+			Field field = fields.get(column.value());
+			SQLTypeHandler handler = handlers.get(column.value());
+
+			handler.prepareStatement(preparer, field.get(obj));
+		}
+	}
+
+	protected void saveToObject(T obj, List<Column> pulledColumns, PreparedStatement statement) throws SQLException, IllegalAccessException {
+		ResultSet result = statement.getResultSet();
+
+		if (!result.next()) {
+			throw new IllegalStateException("No result was returned");
+		}
+
+		for (Column column : pulledColumns) {
+			Field field = fields.get(column.value());
+
+			if (field != null) {
+				SQLTypeHandler handler = handlers.get(column.value());
+
+				handler.copyToField(column.value(), result, field, obj);
+			}
+		}
+	}
+
+	public T delete(T obj) throws SQLException {
+		try {
+			StatementPreparer preparer = new StatementPreparer(deleteStatement);
+
+			for (Column column : primaryKeyColumns) {
 				SQLTypeHandler handler = handlers.get(column.value());
 				Field field = fields.get(column.value());
 
 				handler.prepareStatement(preparer, field.get(obj));
 			}
 
-			ResultSet result = statement.executeQuery();
+			deleteStatement.executeUpdate();
+
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+
+		return obj;
+	}
+
+	public T insert(T obj) throws SQLException {
+		try {
+			StatementPreparer preparer = new StatementPreparer(insertStatement);
+
+			for (Column column : nonPulledColumns) {
+				Field field = fields.get(column.value());
+				SQLTypeHandler handler = handlers.get(column.value());
+				handler.prepareStatement(preparer, field.get(obj));
+			}
+
+			insertStatement.execute();
+			saveToObject(obj, pulledColumns, insertStatement);
+
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+
+		return obj;
+	}
+
+	public void insertMultiple(List<T> list) throws SQLException {
+		int max = ((1 << 16) - 1) / columns.size();
+		int count = list.size() - 1;
+		int current = 0;
+
+		Spinner.start();
+
+		long start = System.currentTimeMillis();
+
+		try {
+			while (current < count) {
+				int batchSize = Math.min(count - current, max);
+
+				Spinner.setMessage("Building statement for %d rows (%d / %d)".formatted(batchSize, current, count));
+
+				String statementString = getInsertMultipleStatement(batchSize);
+				PreparedStatement statement = connection.prepareStatement(statementString);
+				StatementPreparer preparer = new StatementPreparer(statement);
+
+				for (int i = current; i < current + batchSize && i < count; i++) {
+					T obj = list.get(i);
+
+					for (Column column : nonPulledColumns) {
+						Field field = fields.get(column.value());
+						SQLTypeHandler handler = handlers.get(column.value());
+
+						handler.prepareStatement(preparer, field.get(obj));
+					}
+				}
+
+				long startBatch = System.currentTimeMillis();
+
+				Spinner.setMessage("Running statement for %d rows (%d / %d)".formatted(batchSize, current, count));
+				statement.executeUpdate();
+
+				long endBatch = System.currentTimeMillis();
+				long durationBatch = endBatch - startBatch;
+
+				LOGGER.finer("Inserted %d rows in %dms (%d / %d)".formatted(batchSize, durationBatch, current, count));
+				current += batchSize;
+			}
+
+		} catch (IllegalAccessException e) {
+			Spinner.stop();
+
+			throw new RuntimeException(e);
+		}
+
+		Spinner.stop();
+
+		long end = System.currentTimeMillis();
+		long duration = end - start;
+		LOGGER.fine("Inserted %d rows in %dms".formatted(count, duration));
+	}
+
+	protected String getInsertMultipleStatement(int count) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("INSERT INTO ");
+		sb.append(name);
+		sb.append(" (");
+
+		for (int i = 0; i < nonPulledColumns.size(); i++) {
+			Column column = nonPulledColumns.get(i);
+			sb.append(column.value());
+
+			if (i < nonPulledColumns.size() - 1) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append(") VALUES ");
+
+		for (int i = 0; i < count; i++) {
+			sb.append('(');
+
+			for (int j = 0; j < nonPulledColumns.size(); j++) {
+				sb.append('?');
+
+				if (j < nonPulledColumns.size() - 1) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append(')');
+
+			if (i < count - 1) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append(";");
+
+		return sb.toString();
+	}
+
+	/// pull the data from the row that corresponds to the given object and modifies the content of the object
+	public T pull(T obj) throws SQLException {
+		try {
+			StatementPreparer preparer = new StatementPreparer(pullStatement);
+
+			for (Column column : primaryKeyColumns) {
+				SQLTypeHandler handler = handlers.get(column.value());
+				Field field = fields.get(column.value());
+				handler.prepareStatement(preparer, field.get(obj));
+			}
+
+			ResultSet result = pullStatement.executeQuery();
 
 			if (!result.next()) {
 				throw new IllegalStateException("No result was returned");
