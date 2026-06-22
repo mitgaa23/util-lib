@@ -6,9 +6,13 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public class ConsoleSpinner implements Runnable {
-	private static final long UPDATE_DELAY = 75;
+	private static final int REFRESH_COUNT = 7;
+	private static final long UPDATE_DELAY = 10;
+
 	private static final Supplier<Boolean> DEFAULT_CONDITION = () -> true;
-	private static final String FORMAT = " " + Colorizer.colorize("{#feceaa}%s{#}") + " \t%s\r";
+	private static final String FORMAT = " " + Colorizer.colorize("{#feceaa}%s{#}") + " ";
+	private static final String FORMAT_MESSAGE = FORMAT + " \t%s\r";
+	private static final String FORMAT_NO_MESSAGE = FORMAT + "\r";
 	private static final String DONE_STATE = "⣏⣹";
 	private static final String[] STATES = new String[]{
 			//"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"
@@ -31,6 +35,7 @@ public class ConsoleSpinner implements Runnable {
 	private String message = "";
 	private Thread thread;
 	private int index;
+	private int counter;
 
 	public void start() {
 		start(DEFAULT_CONDITION);
@@ -103,11 +108,21 @@ public class ConsoleSpinner implements Runnable {
 	}
 
 	private static void print(String state, String message) {
-		System.out.printf(FORMAT, state, message);
+		if (message == null) {
+			System.out.printf(FORMAT_NO_MESSAGE, state);
+		} else {
+			System.out.printf(FORMAT_MESSAGE, state, message);
+		}
+
 		System.out.flush();
 	}
 
 	private void advanceIndex() {
-		index = (index + 1) % STATES.length;
+		counter++;
+
+		if (counter > REFRESH_COUNT) {
+			counter = 0;
+			index = (index + 1) % STATES.length;
+		}
 	}
 }

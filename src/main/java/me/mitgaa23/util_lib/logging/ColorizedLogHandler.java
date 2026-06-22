@@ -14,7 +14,9 @@ import java.util.logging.*;
 
 public class ColorizedLogHandler extends Handler {
 	public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-	public static final String LOG_FORMAT = "{#cdd6f4}[{#75ffbb} {time} {#cdd6f4}|{#bb75ff} {thread} {#cdd6f4}->{#bb75ff} {name} {#cdd6f4}|{#%x} {level} {#cdd6f4}]:{#a6adc8} {msg}";
+	// public static final String LOG_FORMAT = "{#cdd6f4}[{#75ffbb} {time} {#cdd6f4}|{#bb75ff} {thread} {#cdd6f4}->{#bb75ff} {name} {#cdd6f4}|{#%x} {level} {#cdd6f4}]:{#a6adc8} {msg}";
+	public static final String LOG_FORMAT = "{#bac2de}[{#75ffbb} {time} {#bac2de}|{#bb75ff} {thread} {#bac2de}->{#bb75ff} {name} {#bac2de}| {level} {#bac2de}]:{#a6adc8} {msg}";
+	public static final String LOG_FORMAT_PRETTY = Colorizer.colorize(LOG_FORMAT);
 
 	private static final PrintStream OUT = System.out;
 	private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();
@@ -38,17 +40,17 @@ public class ColorizedLogHandler extends Handler {
 		Instant instant = record.getInstant();
 		String threadName = String.valueOf(threadInfo != null ? threadInfo.getThreadName() : null);
 		LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+		String formattedLevel = Colorizer.colorize("{#%x}".formatted(getColor(level))) + level.getName();
 
-		String format = LOG_FORMAT.formatted(getColor(level));
-		format = format.replaceAll("\\{time}", FORMATTER.format(time));
-		format = format.replaceAll("\\{name}", name);
-		format = format.replaceAll("\\{level}", level.getName());
-		format = format.replaceAll("\\{thread}", threadName);
-		format = format.replaceAll("\\{msg}", msg);
+		String format = LOG_FORMAT_PRETTY;
 
-		String colorized = Colorizer.colorize(format);
+		format = format.replace("{time}", FORMATTER.format(time));
+		format = format.replace("{name}", name);
+		format = format.replace("{level}", formattedLevel);
+		format = format.replace("{thread}", threadName);
+		format = format.replace("{msg}", msg);
 
-		OUT.println(colorized);
+		OUT.println(format);
 	}
 
 	private static int getColor(Level level) {
