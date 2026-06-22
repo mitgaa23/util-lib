@@ -55,10 +55,9 @@ public final class Colorizer {
 
 	public static String colorize(String str) {
 		Matcher foregroundMatcher = FOREGROUND_PATTERN.matcher(str);
-
 		str = insertAnsiEscapes(str, foregroundMatcher, Colorizer::foreground);
-		Matcher backgroundMatcher = BACKGROUND_PATTERN.matcher(str);
 
+		Matcher backgroundMatcher = BACKGROUND_PATTERN.matcher(str);
 		return insertAnsiEscapes(str, backgroundMatcher, Colorizer::background);
 	}
 

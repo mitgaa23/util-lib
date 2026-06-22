@@ -40,8 +40,8 @@ public class ColorizedLogHandler extends Handler {
 		Instant instant = record.getInstant();
 		String threadName = String.valueOf(threadInfo != null ? threadInfo.getThreadName() : null);
 		LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-		String formattedLevel = Colorizer.colorize("{#%x}".formatted(getColor(level))) + level.getName();
 
+		String formattedLevel = Colorizer.colorize("{#%x}%s".formatted(getColor(level), level.getName()));
 		String format = LOG_FORMAT_PRETTY;
 
 		format = format.replace("{time}", FORMATTER.format(time));
