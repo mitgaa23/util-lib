@@ -1,5 +1,6 @@
-package me.mitgaa23.util_lib.database;
+package me.mitgaa23.util_lib.database.table;
 
+import me.mitgaa23.util_lib.database.StatementPreparer;
 import me.mitgaa23.util_lib.database.annotations.Column;
 import me.mitgaa23.util_lib.database.proxy.SQLTypeHandler;
 
