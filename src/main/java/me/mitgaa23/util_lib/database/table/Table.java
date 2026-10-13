@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /// TODO: Make less Postgres specific
@@ -36,6 +37,7 @@ public abstract class Table<T> {
 	private final PreparedStatement deleteStatement;
 	private final PreparedStatement insertStatement;
 	private final PreparedStatement pullStatement;
+	private final PreparedStatement getAllStatement;
 
 	public Table(String name, Class<T> clazz, Connection connection) throws SQLException {
 		this.name = name;
@@ -64,6 +66,7 @@ public abstract class Table<T> {
 		this.deleteStatement = connection.prepareStatement(getDeleteStatement());
 		this.insertStatement = connection.prepareStatement(getInsertStatement());
 		this.pullStatement = connection.prepareStatement(getPullStatement());
+		this.getAllStatement = connection.prepareStatement(getGetAllStatement());
 	}
 
 	private void initFields() {
@@ -109,6 +112,10 @@ public abstract class Table<T> {
 
 	protected abstract String getPullStatement();
 
+	protected abstract String getGetAllStatement();
+
+	protected abstract String getInsertMultipleStatement(int count);
+
 	public Class<?> getClazz() {
 		return clazz;
 	}
@@ -133,7 +140,11 @@ public abstract class Table<T> {
 			fillUpdateStatement(updateStatement, obj);
 
 			updateStatement.execute();
-			saveToObject(obj, pulledColumns, updateStatement.getResultSet());
+			ResultSet resultSet = updateStatement.getResultSet();
+
+			if (resultSet.next()) {
+				saveToObject(obj, pulledColumns, resultSet);
+			}
 
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
@@ -144,12 +155,8 @@ public abstract class Table<T> {
 
 	protected abstract void fillUpdateStatement(PreparedStatement updateStatement, T obj) throws SQLException, IllegalAccessException;
 
-	protected void saveToObject(T obj, List<Column> pulledColumns, ResultSet result) throws SQLException, IllegalAccessException {
-		if (!result.next()) {
-			throw new IllegalStateException("No result was returned");
-		}
-
-		for (Column column : pulledColumns) {
+	protected void saveToObject(T obj, List<Column> columns, ResultSet result) throws SQLException, IllegalAccessException {
+		for (Column column : columns) {
 			Field field = fields.get(column.value());
 
 			if (field != null) {
@@ -180,7 +187,11 @@ public abstract class Table<T> {
 			fillInsertStatement(insertStatement, obj);
 
 			insertStatement.execute();
-			saveToObject(obj, pulledColumns, insertStatement.getResultSet());
+			ResultSet resultSet = insertStatement.getResultSet();
+
+			if (resultSet.next()) {
+				saveToObject(obj, pulledColumns, resultSet);
+			}
 
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
@@ -192,33 +203,21 @@ public abstract class Table<T> {
 	protected abstract void fillInsertStatement(PreparedStatement insertStatement, T obj) throws SQLException, IllegalAccessException;
 
 	public void insertMultiple(List<T> list) throws SQLException {
-		int max = ((1 << 16) - 1) / columns.size();
-		int count = list.size() - 1;
-		int current = 0;
-
 		Spinner.start();
 
 		long start = System.currentTimeMillis();
 
 		try {
-			while (current < count) {
-				int batchSize = Math.min(count - current, max);
-				long startBatch = System.currentTimeMillis();
-
-				Spinner.setMessage("Building statement for %d rows (%d / %d)".formatted(batchSize, current, count));
-
-				try (PreparedStatement statement = fillInsertMultipleStatement(list, batchSize, current, count)) {
-					Spinner.setMessage("Running statement for %d rows (%d / %d)".formatted(batchSize, current, count));
-
-					statement.executeUpdate();
-				}
-
-				long endBatch = System.currentTimeMillis();
-				long durationBatch = endBatch - startBatch;
-
-				LOGGER.finer("Inserted %d rows in %dms (%d / %d)".formatted(batchSize, durationBatch, current + batchSize, count));
-				current += batchSize;
+			for (T obj : list) {
+				Spinner.setMessage("Current statement: %s".formatted(obj));
+				fillInsertStatement(insertStatement, obj);
+				insertStatement.addBatch();
 			}
+
+			insertStatement.executeBatch();
+
+			insertStatement.clearBatch();
+			insertStatement.clearParameters();
 
 		} catch (IllegalAccessException e) {
 			Spinner.stop();
@@ -230,17 +229,15 @@ public abstract class Table<T> {
 
 		long end = System.currentTimeMillis();
 		long duration = end - start;
-		LOGGER.fine("Inserted %d rows in %dms".formatted(count, duration));
+		LOGGER.fine("Inserted %d rows in %dms".formatted(list.size(), duration));
 	}
 
 	protected abstract PreparedStatement fillInsertMultipleStatement(List<T> list, int batchSize, int current, int count) throws SQLException, IllegalAccessException;
 
-	protected abstract String getInsertMultipleStatement(int count);
-
 	/// pull the data from the row that corresponds to the given object and modifies the content of the object
 	public T pull(T obj) throws SQLException {
 		try {
-			fillInPullStatement(pullStatement, obj);
+			fillPullStatement(pullStatement, obj);
 
 			ResultSet result = pullStatement.executeQuery();
 
@@ -262,5 +259,24 @@ public abstract class Table<T> {
 		return obj;
 	}
 
-	protected abstract void fillInPullStatement(PreparedStatement pullStatement, T obj) throws SQLException, IllegalAccessException;
+	protected abstract void fillPullStatement(PreparedStatement pullStatement, T obj) throws SQLException, IllegalAccessException;
+
+	public List<T> getAll(Supplier<T> supplier) throws SQLException, IllegalAccessException {
+		List<T> results = new ArrayList<>();
+
+		fillGetAllStatement(getAllStatement);
+
+		ResultSet resultSet = getAllStatement.executeQuery();
+
+		while (resultSet.next()) {
+			T obj = supplier.get();
+
+			saveToObject(obj, columns, resultSet);
+			results.add(obj);
+		}
+
+		return results;
+	}
+
+	protected abstract void fillGetAllStatement(PreparedStatement getAllStatement);
 }

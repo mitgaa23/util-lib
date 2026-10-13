@@ -156,24 +156,60 @@ public class PostgresTable<T> extends Table<T> {
 
 	@Override
 	protected String getPullStatement() {
+		StringBuilder sb = getSelectStatement();
+		sb.append(" WHERE ");
+
+		appendWhereClause(sb);
+		sb.append(";");
+
+		return sb.toString();
+	}
+
+	@Override
+	protected String getGetAllStatement() {
+		StringBuilder sb = getSelectStatement();
+		sb.append(";");
+
+		return sb.toString();
+	}
+
+	@Override
+	protected String getInsertMultipleStatement(int count) {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("SELECT ");
+		sb.append("INSERT INTO ");
+		sb.append(name);
+		sb.append(" (");
 
-		for (int i = 0; i < columns.size(); i++) {
-			Column column = columns.get(i);
+		for (int i = 0; i < nonPulledColumns.size(); i++) {
+			Column column = nonPulledColumns.get(i);
 			sb.append(column.value());
 
-			if (i < columns.size() - 1) {
+			if (i < nonPulledColumns.size() - 1) {
 				sb.append(", ");
 			}
 		}
 
-		sb.append(" FROM ");
-		sb.append(name);
-		sb.append(" WHERE ");
+		sb.append(") VALUES ");
 
-		appendWhereClause(sb);
+		for (int i = 0; i < count; i++) {
+			sb.append('(');
+
+			for (int j = 0; j < nonPulledColumns.size(); j++) {
+				sb.append('?');
+
+				if (j < nonPulledColumns.size() - 1) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append(')');
+
+			if (i < count - 1) {
+				sb.append(", ");
+			}
+		}
+
 		sb.append(";");
 
 		return sb.toString();
@@ -230,49 +266,7 @@ public class PostgresTable<T> extends Table<T> {
 	}
 
 	@Override
-	protected String getInsertMultipleStatement(int count) {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("INSERT INTO ");
-		sb.append(name);
-		sb.append(" (");
-
-		for (int i = 0; i < nonPulledColumns.size(); i++) {
-			Column column = nonPulledColumns.get(i);
-			sb.append(column.value());
-
-			if (i < nonPulledColumns.size() - 1) {
-				sb.append(", ");
-			}
-		}
-
-		sb.append(") VALUES ");
-
-		for (int i = 0; i < count; i++) {
-			sb.append('(');
-
-			for (int j = 0; j < nonPulledColumns.size(); j++) {
-				sb.append('?');
-
-				if (j < nonPulledColumns.size() - 1) {
-					sb.append(", ");
-				}
-			}
-
-			sb.append(')');
-
-			if (i < count - 1) {
-				sb.append(", ");
-			}
-		}
-
-		sb.append(";");
-
-		return sb.toString();
-	}
-
-	@Override
-	protected void fillInPullStatement(PreparedStatement pullStatement, T obj) throws SQLException, IllegalAccessException {
+	protected void fillPullStatement(PreparedStatement pullStatement, T obj) throws SQLException, IllegalAccessException {
 		StatementPreparer preparer = new StatementPreparer(pullStatement);
 
 		for (Column column : primaryKeyColumns) {
@@ -282,6 +276,11 @@ public class PostgresTable<T> extends Table<T> {
 		}
 	}
 
+	@Override
+	protected void fillGetAllStatement(PreparedStatement getAllStatement) {
+
+	}
+
 	protected void prepareColumnNames(T obj, List<Column> affectedColumns, StatementPreparer preparer) throws SQLException, IllegalAccessException {
 		for (Column column : affectedColumns) {
 			Field field = fields.get(column.value());
@@ -289,6 +288,25 @@ public class PostgresTable<T> extends Table<T> {
 
 			handler.prepareStatement(preparer, field.get(obj));
 		}
+	}
+
+	protected StringBuilder getSelectStatement() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("SELECT ");
+
+		for (int i = 0; i < columns.size(); i++) {
+			Column column = columns.get(i);
+			sb.append(column.value());
+
+			if (i < columns.size() - 1) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append(" FROM ");
+		sb.append(name);
+		return sb;
 	}
 
 	protected void appendWhereClause(StringBuilder sb) {
